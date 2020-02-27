@@ -19,9 +19,8 @@ class FACTORYGAME_API UFGCircuitConnectionComponent : public UFGConnectionCompon
 public:
 	UFGCircuitConnectionComponent();
 
-	void GetLifetimeReplicatedProps( TArray< FLifetimeProperty >& OutLifetimeProps ) const;
-
 	// Begin UActorComponent interface
+	virtual void GetLifetimeReplicatedProps( TArray< FLifetimeProperty >& OutLifetimeProps ) const override;
 	virtual void OnComponentDestroyed( bool isDestroyingHierarchy ) override;
 	// End UActorComponent interface
 
@@ -33,7 +32,7 @@ public:
 	void SetIsHidden( bool isHidden ) { mIsHiddenConnection = isHidden; }
 
 	/** Get the number of connections to this connection, excluding hidden. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 GetNumConnections() const { 
 #if !IS_PUBLIC_BUILD
 		if( GetOwner() && GetOwner()->HasAuthority() )
@@ -45,15 +44,15 @@ public:
 	}
 
 	/** Get the number of hidden connections to this connection. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 GetNumHiddenConnections() const { return mHiddenConnections.Num(); }
 
 	/** Get the maximum allowed connections to this connection. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 GetMaxNumConnections() const { return mMaxNumConnectionLinks; }
 
 	/** Get How many free connections this connection has. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 GetNumFreeConnections() const { return GetMaxNumConnections() - GetNumConnections(); }
 
 	/**
@@ -73,6 +72,7 @@ public:
 	 * @param out_wires Array to append all the wires.
 	 */
 	FORCEINLINE void GetWires( TArray< class AFGBuildableWire* >& out_wires ) const { out_wires.Append( mWires ); }
+	FORCEINLINE void GetWires( TInlineComponentArray< class AFGBuildableWire* >& out_wires ) const { out_wires.Append( mWires ); }
 
 	/**
 	 * Add a connection to another component.
@@ -92,28 +92,34 @@ public:
 	 * Add a hidden connection to another connection component. One of the connections must be hidden for this to be valid.
 	 * Connects both ends of the connection and the circuits.
 	 */
+	UFUNCTION( BlueprintCallable, Category = "FactoryGame|Circuits|Connection" )
 	void AddHiddenConnection( class UFGCircuitConnectionComponent* other );
 
 	/**
 	 * Remove a hidden connection to another connection component.
 	 * Disconnects both ends of the connection and the circuits.
 	 */
+	UFUNCTION( BlueprintCallable, Category = "FactoryGame|Circuits|Connection" )
 	void RemoveHiddenConnection( class UFGCircuitConnectionComponent* other );
 
 	/** Clear all hidden connections. */
 	void ClearHiddenConnections();
 
 	/** Is this a hidden connection, you cannot connect a wire to it but connect it through code. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE bool IsHidden() const { return mIsHiddenConnection; }
 
 	/** @return true if this is connected to a circuit; false if not connected. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 IsConnected() const { return mCircuitID != INDEX_NONE; }
 
 	/** Get the circuit this is connected to; -1 if not connected to a circuit. */
-	UFUNCTION( BlueprintPure, Category = "Connection" )
+	UFUNCTION( BlueprintPure, Category = "FactoryGame|Circuits|Connection" )
 	FORCEINLINE int32 GetCircuitID() const { return mCircuitID; }
+
+	/** Tracks replication changes to mCircuitID */
+	UFUNCTION()
+	void OnRep_CircuitIDChanged();
 
 	/** Callback when connection was removed or added */
 	FConnectionChanged OnConnectionChanged;
@@ -126,7 +132,7 @@ protected:
 	virtual void OnCircuitIDChanged();
 
 	/** Called when the circuit changes, this can happen at any time when the circuitry is changed, e.g. when circuits are split or merged. */
-	UFUNCTION( BlueprintImplementableEvent, Category = "Connection", Meta = ( DisplayName = "OnCircuitIDChanged" ) )
+	UFUNCTION( BlueprintImplementableEvent, Category = "FactoryGame|Circuits|Connection", Meta = ( DisplayName = "OnCircuitIDChanged" ) )
 	void ReceiveOnCircuitIDChanged();
 
 private:
@@ -161,6 +167,6 @@ private:
 	 * The circuit this connection is connected to. INDEX_NONE if not connected.
 	 * @note - This ID may change at any time when changes occurs in the circuitry. Do not save copies of it!
 	 */
-	UPROPERTY( VisibleAnywhere, Replicated, SaveGame, Category = "Connection" )
+	UPROPERTY( VisibleAnywhere, ReplicatedUsing=OnRep_CircuitIDChanged, SaveGame, Category = "Connection" )
 	int32 mCircuitID;
 };

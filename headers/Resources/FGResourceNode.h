@@ -6,6 +6,7 @@
 #include "FGSaveInterface.h"
 #include "FGResourceDescriptor.h"
 #include "FGUseableInterface.h"
+#include "FGExtractableResourceInterface.h"
 #include "FGActorRepresentationInterface.h"
 #include "FGSignificanceInterface.h"
 #include "FGResourceNode.generated.h"
@@ -76,7 +77,7 @@ class UFGUseState_NonConveyorResource : public UFGUseState
 };
 
 UCLASS(Blueprintable,abstract)
-class FACTORYGAME_API AFGResourceNode : public AActor, public IFGSaveInterface, public IFGUseableInterface, public IFGSignificanceInterface
+class FACTORYGAME_API AFGResourceNode : public AActor, public IFGExtractableResourceInterface, public IFGSaveInterface, public IFGUseableInterface, public IFGSignificanceInterface
 {
 	GENERATED_BODY()
 	
@@ -123,6 +124,18 @@ public:
 	virtual void UnregisterInteractingPlayer_Implementation( class AFGCharacterPlayer* player ) override {};
 	//~ End IFGUseableInterface
 
+	// Begin IFGExtractableResourceInterface
+	virtual void SetIsOccupied_Implementation( bool occupied ) override;
+	virtual bool IsOccupied_Implementation() const override;
+	virtual bool CanBecomeOccupied_Implementation() const override;
+	virtual bool HasAnyResources_Implementation() const override;
+	virtual TSubclassOf< UFGResourceDescriptor > GetResourceClass_Implementation() const override;
+	virtual int32 ExtractResource_Implementation( int32 amount ) override;
+	virtual float GetExtractionSpeedMultiplier_Implementation() const override;
+	virtual FVector GetPlacementLocation_Implementation( const FVector& hitLocation ) const override;
+	virtual bool CanPlaceResourceExtractor_Implementation() const override;
+	// End IFGExtractableResourceInterface
+
 	/** Localized name */
 	UFUNCTION( BlueprintPure, Category = "Resources" )
 	FText GetResourceName() const;
@@ -146,27 +159,9 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Resources" )
 	FORCEINLINE EResourcePurity GetResoucePurity(){ return mPurity; }
 
-	/** Query the resource node what kind of resource class is of */
-	UFUNCTION(BlueprintPure,Category="Resources")
-	TSubclassOf<UFGResourceDescriptor> GetResourceClass() const;
-
-	/** Get a speed multiplier when extracting from this resource */
-	UFUNCTION(BlueprintPure,Category="Resources")
-	float GetExtractionSpeedMultiplier() const;
-
 	/** If true, this node will NEVER join another cluster of nodes, regardless of proximity. */
 	UFUNCTION( BlueprintPure, Category="Resources" )
 	bool GetIsLonerNode() const { return mIsLonerNode; }
-
-	/** Call this to extract a resources from the node, and it will return how many resources you can extract from it */
-	int32 ExtractResource( int32 amount );
-
-	UFUNCTION(BlueprintPure,Category="Resources")
-	bool HasAnyResources() const;
-
-	/** Set if the node is occupied by something */
-	UFUNCTION( BlueprintCallable, Category = "Resources" )
-	void SetIsOccupied( bool occupied );
 
 	/** Let the client know when we changed. mIsOccupied */
 	UFUNCTION()
@@ -175,10 +170,6 @@ public:
 	/** Let's blueprint know that we have changed occupied states */
 	UFUNCTION( BlueprintImplementableEvent, Category = "Resources" )
 	void OnIsOccupiedChanged( bool newIsOccupied );
-
-	/** Return true if the resource is occupied */
-	UFUNCTION( BlueprintPure, Category = "Resources" )
-	bool IsOccupied() const; 
 
 	/** The range of a resource for a amount */
 	const FInt32Interval& GetResourceAmount( EResourceAmount amount ) const;
@@ -193,10 +184,6 @@ public:
 	/** Gives one resource to a player */
 	UFUNCTION( BlueprintCallable )
 	virtual void ExtractResourceAndGiveToPlayer( AFGCharacterPlayer* toPlayer, int32 amount = 1 );
-
-	/** Is this resource node valid for placing an extractor on? */
-	UFUNCTION( BlueprintPure, Category = "Resources" ) 
-	FORCEINLINE bool CanPlaceResourceExtractor() { return mCanPlaceResourceExtractor; }
 
 	/**Getter for extract multiplier */
 	UFUNCTION( BlueprintPure, Category = "Resources" )
@@ -257,10 +244,6 @@ protected:
 	UPROPERTY( EditInstanceOnly, Category = "Resources" )
 	TEnumAsByte<EResourceAmount> mAmount;
 
-	/** The mesh we use for displaying the resource if it has a ground mesh */
-	UPROPERTY( BlueprintReadOnly, VisibleDefaultsOnly, Category = "Resources")
-	UStaticMeshComponent* mStaticMeshComponent;
-
 	/** the decal that used for displaying the resource */
 	UPROPERTY( BlueprintReadOnly, VisibleDefaultsOnly, Category = "Resources" )
 	UDecalComponent* mDecalComponent;
@@ -289,20 +272,16 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "Resources" )
 	bool mCanPlaceResourceExtractor;
 
-	/** is this node a geyser node? */
-	bool mIsGeyserNode;
-
 	/** Multiplier that is applied in the end of extraction calculations. Is used for making deposits extract more than regular nodes */
 	UPROPERTY( EditDefaultsOnly, Category = "Resources" )
 	int32 mExtractMultiplier;
 
-	/** Should we display the default mesh? */
-	UPROPERTY( EditAnywhere, Category = "Resources" )
-	bool mUseDefaultMesh;
-
 	/** Text mapped to resource purity */
 	UPROPERTY( EditDefaultsOnly, Category = "Resources" )
 	TArray< FPurityTextPair > mPurityTextArray;
+
+	/** Last frame we flushed net dormancy */
+	uint64 mLastFlushFrame;
 public:
 	/** Can this resource node be used for placing portable miners on */
 	bool mCanPlacePortableMiner;

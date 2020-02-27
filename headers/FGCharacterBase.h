@@ -18,9 +18,9 @@ struct FFootstepEffect
 	UPROPERTY( EditDefaultsOnly, Category = "Footstep" )
 	class UParticleSystem* Particle;
 
-	/** UNIMPLEMENTED: The decal to place on the ground when walking around */
+	/** The decal to place on the ground when walking around */
 	UPROPERTY( EditDefaultsOnly, Category = "Footstep" )
-	class UMaterialInterface* GroundDecal;
+	TArray< class UMaterialInterface* > GroundDecals;
 };
 
 USTRUCT( BlueprintType )
@@ -77,6 +77,7 @@ public:
 	*	@param C The controller possessing this pawn
 	*/
 	virtual void PossessedBy( AController* NewController );
+	virtual void UnPossessed() override;
 
 	// Begin IFGSaveInterface
 	virtual void PreSaveGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
@@ -209,8 +210,19 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Mesh" )
 	virtual USkeletalMeshComponent* GetMesh3P() const;
 
+	/** Returns mesh depending on what camera mode we are in 1p or 3p **/
+	UFUNCTION( BlueprintPure, Category = "Mesh" )
+	virtual USkeletalMeshComponent* GetMainMesh() const;
+
 	/** Check if fall damage should be applied */
 	void CheckFallDamage( float zSpeed );
+
+	/** Sets if this pawn is possessed and locally playable */
+	void SetLocallyPossessed( bool inPossessed );
+
+	/** Event called when a locally controlled pawn gets possessed/unpossessed */
+	UFUNCTION( BlueprintImplementableEvent, BlueprintCosmetic, Category = "Character" )
+	void OnLocallyPossessedChanged( bool isLocallyPossessed );
 protected:
 	/**
 	 * Get the audio event for the foot down
@@ -262,8 +274,9 @@ protected:
 	 * @param hitInfo - information about how the hit looks when playing the effect
 	 * @param precalculatedEffect - precalculatedEffect fetched effect with what material we should put on the ground
 	 * @param socketRotation - the rotation we should have of our effect
+	 * @param footDown - the index passed from UFGAnimNotify_FootDown::Notify in the animation
 	 */
-	void PlaceFootstepDecal( const FHitResult& hitInfo, const FFootstepEffect& precalculatedEffect, FRotator socketRotation );
+	void PlaceFootstepDecal( const FHitResult& hitInfo, const FFootstepEffect& precalculatedEffect, FRotator socketRotation, int32 footDown );
 
 	/**
 	 * Get the effects associated with the depth of water
@@ -295,6 +308,9 @@ private:
 	UFUNCTION()
 	void OnRep_IsRagdolled();
 
+	UFUNCTION()
+	void OnRep_IsPossessed();
+
 	FVector FindSafePlaceToGetUp();
 
 protected:
@@ -324,7 +340,7 @@ protected:
 
 	/** Size of footstep decals */
 	UPROPERTY( EditDefaultsOnly, Category = "Footstep" )
-	FVector mFootstepDecalSize;
+	TArray< FVector > mFootstepDecalSize;
 
 	/** Lifetime of footstep decals */
 	UPROPERTY( EditDefaultsOnly, Category = "Footstep" )
@@ -458,4 +474,11 @@ protected:
 	/** Multiplier for this creature and normal damage taken */
 	UPROPERTY( EditDefaultsOnly, Category = "Damage" )
 	float mNormalDamageMultiplier;
+private:
+	/** Used to keep track if we are locally possessed */
+	bool mIsLocallyPossessed;
+
+	/** Used to let client know when a pawn gets possessed/unpossessed */
+	UPROPERTY( ReplicatedUsing = OnRep_IsPossessed )
+	bool mIsPossessed;
 };

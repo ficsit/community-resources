@@ -40,6 +40,8 @@ class FACTORYGAME_API UFGBuildGunStateDismantle : public UFGBuildGunState
 	GENERATED_BODY()
 
 public:
+	UFGBuildGunStateDismantle();
+
 	virtual void GetLifetimeReplicatedProps( TArray< class FLifetimeProperty > & OutLifetimeProps ) const override;
 
 	// Begin UFGBuildGunState
@@ -48,6 +50,7 @@ public:
 	virtual void TickState_Implementation( float deltaTime ) override;
 	virtual void PrimaryFire_Implementation() override;
 	virtual void SecondaryFire_Implementation() override;
+	virtual void OnRecipeSampled_Implementation( TSubclassOf<class UFGRecipe> recipe ) override;
 	// End UFGBuildGunState
 
 	/** Toggle between whether the multi select should be in effect as actors are being highlighted */
@@ -97,7 +100,6 @@ public:
 	/** Give blueprint a chance to do effect when starting dismantle */
 	UFUNCTION( BlueprintImplementableEvent, Category = "BuildGunState" )
 	void OnStartDismantle();
-
 public:
 	/** Delegate for when the refunds used to preview dismantle refunds have been updated on local machine */
 	UPROPERTY( BlueprintAssignable, Category = "BuildGunState|Dismantle" )
@@ -113,9 +115,6 @@ protected:
 	void Internal_OnMultiDismantleStateChanged(bool newValue);
 
 private:
-	UFUNCTION( Server, Reliable, WithValidation )
-	void Server_DismantleActor( class AActor* actorToDismantle );
-
 	/** Client selects actor, then tells the server what to dismantle. This function does that! */
 	UFUNCTION( Server, Reliable, WithValidation )
 	void Server_DismantleActors( const TArray<class AActor*>& selectedActors );
@@ -125,6 +124,9 @@ private:
 
 	UFUNCTION()
 	virtual void OnRep_PeekDismantleRefund();
+
+	/** Dismantle a given actor. Refunds that couldn't fit in inventory from dismantled actor will be appended to out_overflowRefunds. Will place overflow refunds on ground if dropRefundsOnDismantle is true. **/
+	void Internal_DismantleActor( class AActor* actorToDismantle, TArray<FInventoryStack>& out_overflowRefunds, bool dropRefundsOnDismantle = true );
 
 	/** Set the selected actor (Simulated on client). Deselects the actor is selected param is nullptr */
 	void SetAimedAtActor( class AActor* selected );

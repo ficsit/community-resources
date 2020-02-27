@@ -3,8 +3,9 @@
 #pragma once
 
 #include "FGCreatureController.h"
-#include "FGAggroTargetInterface.h"
 #include "FGEnemyController.generated.h"
+
+class FGAggroTargetInterface;
 
 UENUM( BlueprintType )
 enum class EIgnore : uint8
@@ -92,8 +93,8 @@ public:
 	AFGEnemyController( const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get() );
 
 	//~ Begin AController Interface
-	virtual void Possess( APawn* InPawn ) override;
-	virtual void UnPossess() override;
+	virtual void OnPossess( APawn* InPawn ) override;
+	virtual void OnUnPossess() override;
 	//~ End AController Interface
 
 	/** Override the startpanic */

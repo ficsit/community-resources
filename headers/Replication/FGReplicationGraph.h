@@ -10,15 +10,14 @@
 enum class EClassRepPolicy : uint8
 {
 	CRP_NotRouted,						// Doesn't map to any node. Used for special case actors that handled by special case nodes (UShooterReplicationGraphNode_PlayerStateFrequencyLimiter)
-	CRP_RelevantAllConnections,			// Routes to an mAlwaysRelevantNode or mAlwaysRelevantStreamingLevelNode node
+	CRP_RelevantAllConnections,			// Routes to mAlwaysRelevantNode or mAlwaysRelevantStreamingLevelNode node
+	CRP_ConditionalRelevant,			// Routes to mConditionalRelevantNode that runs IsNetRelevantFor() on each actor. Expects each actor to be relevant for all connections 
 	
 	// Spatialized routes into the grid node
 	CRP_Spatialize_Static,				// Routes to mGridNode: these actors don't move and don't need to be updated every frame.
 	CRP_Spatialize_Dynamic,				// Routes to mGridNode: these actors move frequently and are updated once per frame.
 	CRP_Spatialize_Dormancy,			// Routes to mGridNode: While dormant we treat as static. When flushed/not dormant dynamic. Note this is for things that "move while not dormant".
-	CRP_Deferred_Spatialize_Static,				// Deferred replication on initial load. Then Routes to mGridNode: these actors don't move and don't need to be updated every frame.
-	CRP_Deferred_Spatialize_Dynamic,				// Deferred replication on initial load. Then Routes to mGridNode: these actors move frequently and are updated once per frame.
-	CRP_Deferred_Spatialize_Dormancy,			// Deferred replication on initial load. Then Routes to mGridNode: While dormant we treat as static. When flushed/not dormant dynamic. Note this is for things that "move while not dormant".
+	CRP_Spatialize_Prioritized_Dynamic  // Routes to mPrioritizedGridNode: these actors are updated in the same manner as the regular dynamic nodes, but their replication rate is not distributed over frames
 };
 
 USTRUCT()
@@ -74,9 +73,16 @@ public:
 	UPROPERTY()
 	UReplicationGraphNode_GridSpatialization2D* mGridNode;
 
+	/** Grid Node that is dedicated for more frequently updated actors. Does not divide cells into buckets. */
+	UPROPERTY()
+	UReplicationGraphNode_GridSpatialization2D* mPrioritizedGridNode;
+
 	/** Node that holds a list of actors that are always Net Relevant. */
 	UPROPERTY()
 	UReplicationGraphNode_ActorList* mAlwaysRelevantNode;
+
+	UPROPERTY()
+	UFGReplicationGraphNode_ConditionallyAlwaysRelevant* mConditionalRelevancyNode;
 
 	UPROPERTY()
 	TArray<FConnectionAlwaysRelevant_NodePair> mAlwaysRelevantForConnectionList;
@@ -118,7 +124,7 @@ protected:
 	FORCEINLINE bool IsSpatialized( EClassRepPolicy mapping ) { return mapping >= EClassRepPolicy::CRP_Spatialize_Static; }
 
 	/** Gets the mapping to be used for the given class */
-	EClassRepPolicy GetMappingPolicy( const UClass* inClass );
+	EClassRepPolicy GetMappingPolicy( UClass* inClass );
 
 	TClassMap<EClassRepPolicy> mClassRepPolicies;
 
@@ -147,6 +153,24 @@ private:
 	void LogCurrentActorDependencyList( FGlobalActorReplicationInfo& actorInfo, FString& logMarker );
 
 	UReplicationGraphNode_AlwaysRelevant_ForConnection* GetAlwaysRelevantNodeForConnection( UNetConnection* Connection );
+};
+
+UCLASS()
+class UFGReplicationGraphNode_ConditionallyAlwaysRelevant : public UReplicationGraphNode_ActorList
+{
+public:
+	GENERATED_BODY()
+
+	// ~ begin UReplicationGraphNode_AlwaysRelevant_ForConnection implementation
+	virtual void GatherActorListsForConnection( const FConnectionGatherActorListParameters& Params ) override;
+	virtual void NotifyAddNetworkActor( const FNewReplicatedActorInfo& ActorInfo ) override;
+	virtual bool NotifyRemoveNetworkActor( const FNewReplicatedActorInfo& ActorInfo, bool bWarnIfNotFound = true ) override;
+	virtual void NotifyResetAllNetworkActors() override;
+	// ~ end UReplicationGraphNode_AlwaysRelevant_ForConnection implementation
+
+
+private:
+	FActorRepListRefView mAllReplicationActors;
 };
 
 UCLASS()

@@ -611,12 +611,17 @@ public:
 	// End IFGSaveInterface
 
 	// Begin AFGBuildableFactory interface
+	virtual void Factory_Tick( float deltaTime ) override;
 	virtual uint8 MaxNumGrab( float dt ) const override;
+	virtual uint8 EstimatedMaxNumGrab_Threadsafe( float estimatedDeltaTime ) const override;
 	// End AFGBuildableFactory interface
 
 	// Begin IFGSignificanceInterface
 	virtual void GainedSignificance_Implementation() override;
 	virtual	void LostSignificance_Implementation() override;
+	virtual void GainedSignificance_Native() override;
+	virtual void LostSignificance_Native() override;
+	virtual	void SetupForSignificance() override;
 
 	UFUNCTION( BlueprintPure, Category = "Significance" )
 	FORCEINLINE bool GetIsSignificant() { return mIsSignificant; }
@@ -634,12 +639,20 @@ public:
 	/** Get the location and direction of the conveyor at the given offset. */
 	virtual void GetLocationAndDirectionAtOffset( float offset, FVector& out_location, FVector& out_direction ) const PURE_VIRTUAL( , );
 
-
 	virtual void PreReplication( IRepChangedPropertyTracker& ChangedPropertyTracker ) override;
+
+	void SetConveyorBucketID( int32 ID );
+
+	FORCEINLINE int32 GetConveyorBucketID() const { return mConveyorBucketID; }
+
+	/** Returns how much room there currently is on the belt. If the belt is empty it will return the length of the belt */
+	float GetAvailableSpace() const;
+
+	/** Returns how much room there was on the belt after the last factory tick. If the belt is empty it will return the length of the belt */
+	float GetCachedAvailableSpace_Threadsafe() const;
 
 protected:
 	// Begin Factory_ interface
-	virtual void Factory_Tick( float deltaTime ) override;
 	virtual bool Factory_PeekOutput_Implementation( const class UFGFactoryConnectionComponent* connection, TArray< FInventoryItem >& out_items, TSubclassOf< UFGItemDescriptor > type ) const override;
 	virtual bool Factory_GrabOutput_Implementation( class UFGFactoryConnectionComponent* connection, FInventoryItem& out_item, float& out_OffsetBeyond, TSubclassOf< UFGItemDescriptor > type ) override;
 	// End Factory_ interface
@@ -677,6 +690,16 @@ private:
 	 */
 	bool HasRoomOnBelt( float& out_availableSpace ) const;
 
+	/**
+	*	Thread safe version to check available room on a belt. This uses a cached position of the last item offset to ensure thread safety
+	*
+	*	@param out_availableSpace - amount of space until the next item
+	*
+	*	@return true if there is enough room for an item of size itemSize
+	*/
+	bool HasRoomOnBelt_ThreadSafe( float& out_availableSpace ) const;
+
+
 public:
 	/** Default height above ground for conveyors. */
 	static constexpr float DEFAULT_CONVEYOR_HEIGHT = 100.f;
@@ -707,10 +730,17 @@ protected:
 	UPROPERTY( VisibleAnywhere, Category = "Conveyor" )
 	class UFGFactoryConnectionComponent* mConnection1;
 
+	/** Stores how much space is available on this belt after its tick runs (thread safe way to access how much space there is to enqueue new items) */
+	float mCachedAvailableBeltSpace;
+
 private:
 	int16 mLastItemsDirtyKey = -2;
 	bool mPendingUpdateItemTransforms;
 
 	/** Indicates if the factory is within significance distance */
 	bool mIsSignificant;
+
+	/** The id for the conveyor bucket this conveyor belongs to */
+	int32 mConveyorBucketID;
+
 };

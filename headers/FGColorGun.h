@@ -38,6 +38,9 @@ public:
 	UFUNCTION( BlueprintPure, Category = "Color Gun" )
 	uint8 GetMaxNumColorSlots();
 
+	UFUNCTION( BlueprintPure, Category = "Color Gun" )
+	uint8 GetNumColorSlotsExposedToPlayers();
+
 	/** Set the secondary color for a given slot*/
 	UFUNCTION( BlueprintCallable, Category = "Color Gun" )
 	void SetPrimaryColorForSlot( uint8 slotIndex, FLinearColor newColor );
@@ -73,25 +76,6 @@ public:
 	/** Opens the UI so that the player can select both colors */
 	UFUNCTION( BlueprintImplementableEvent, Category = "Color Gun" )
 	void OnTargetStateChanged( EFGColorGunTargetType targetType);
-
-	//Deprecated functions
-
-	/**[DEPRECATED]  Set the color slot used when firing */
-	UFUNCTION( BlueprintCallable, Category = "Color Gun" )
-	void SetPrimaryColor( FLinearColor newColor );
-
-	/**[DEPRECATED]  Sets the primary color on the server */
-	UFUNCTION( Server, Reliable, WithValidation )
-	void Sever_SetPrimaryColor( FLinearColor newColor );
-
-
-	/*[DEPRECATED] * Set the secondary color used when firing */
-	UFUNCTION( BlueprintCallable, Category = "Color Gun" )
-	void SetSecondaryColor( FLinearColor newColor );
-
-	/**[DEPRECATED]  Sets the primary color on the server */
-	UFUNCTION( Server, Reliable, WithValidation )
-	void Sever_SetSecondaryColor( FLinearColor newColor );
 
 	/**[DEPRECATED]  Get the primary color */
 	UFUNCTION( BlueprintPure, Category = "Color Gun" )

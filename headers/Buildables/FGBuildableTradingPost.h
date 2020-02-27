@@ -19,11 +19,13 @@ public:
 	// Begin AActor interface
 	virtual void GetLifetimeReplicatedProps( TArray<FLifetimeProperty>& OutLifetimeProps ) const override;
 	virtual void BeginPlay() override;
-	// End AActor interfacee
+	// End AActor interface
 
-	// Begin AFGBuildable interface
-	virtual void GetDismantleRefundReturns( TArray< FInventoryStack >& out_returns ) const override;
-	// End AFGBuildable interface
+	//~ Begin AFGBuildable interface
+	virtual bool CanBeSampled_Implementation() const{ return false; }
+	//~ End AFGBuildable interface
+
+	virtual void PostLoadGame_Implementation( int32 saveVersion, int32 gameVersion ) override;
 
 	//~ Begin IFGDismantleInterface
 	virtual void Dismantle_Implementation() override;
@@ -44,10 +46,6 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "Trading Post" )
 	void UpdateStorageVisibility();
 
-	/** Handles the MAM visibility depending on tutorial step */
-	UFUNCTION( BlueprintCallable, Category = "Trading Post" )
-	void UpdateMAMVisibility();
-
 	/** Returns the inventory component used in the storage box */
 	UFUNCTION( BlueprintPure, Category = "Trading Post" )
 	FORCEINLINE UFGInventoryComponent* GetStorageInventory() { return mStorageInventory; }
@@ -60,18 +58,24 @@ public:
 	virtual void PlayBuildEffects( AActor* inInstigator ) override;
 	virtual void ExecutePlayBuildEffects() override;
 
-
-
-	void PlayBuildEffectsOnAllClients(AActor* instigator = nullptr);
+	void PlayBuildEffectsOnAllClients( AActor* instigator = nullptr );
 
 	/** Checks if all child buildings are created so that we can use them */
 	UFUNCTION( BlueprintPure, Category = "Trading Post" )
 	bool AreChildBuildingsLoaded();
 
+	/** Called by hologram when finishing constructing child buildings to make sure they're setup */
+	void ValidateSubBuildings();
+
+	TArray<AActor*> GetAllActiveSubBuildings();
 
 protected:
 	virtual void OnBuildEffectFinished() override;
 	virtual void TogglePendingDismantleMaterial( bool enabled ) override;
+
+	/** HAXX: For those that has sampled subbuildings, we tag them with a actor tag so that we know that they are not samplable */
+	UFUNCTION()
+	void OnRep_HAXX_SubbuildingReplicated();
 	
 	/** Adjust all child actor components that spawning a AFGPlayerStartTradingPost to the ground */
 	void AdjustPlayerSpawnsToGround();
@@ -80,8 +84,6 @@ protected:
 	class AFGSchematicManager* GetSchematicManager();
 
 private:
-	TArray<AActor*> GetAllActiveSubBuildings();
-
 	UFUNCTION()
 	void OnRep_NeedPlayingBuildEffect();
 
@@ -91,17 +93,13 @@ public:
 	TSubclassOf< class UFGRecipe > mDefaultGeneratorRecipe;
 
 	/** References to the created generators */
-	UPROPERTY( Replicated, SaveGame )
+	UPROPERTY( ReplicatedUsing=OnRep_HAXX_SubbuildingReplicated, SaveGame )
 	TArray< AFGBuildableGenerator* > mGenerators;
 
 	//@todo Why are these recipes and not only TSubclassOf<AFGBuildable>? This seems like a lot of setup just for the extra buildables? Hologram can be created for buildables as well and not just recipes!
 	/** Class of storage to create with the trading post */
 	UPROPERTY( EditDefaultsOnly, Category = "Trading Post" )
 	TSubclassOf< class UFGRecipe > mDefaultStorageRecipe;
-
-	/** Class of MAM to create with the trading post */
-	UPROPERTY( EditDefaultsOnly, Category = "Trading Post" )
-	TSubclassOf< class UFGRecipe > mDefaultMAMRecipe;
 
 	/** Class of hub terminal to create with the trading post */
 	UPROPERTY( EditDefaultsOnly, Category = "Trading Post" )
@@ -112,19 +110,15 @@ public:
 	TSubclassOf< class UFGRecipe > mDefaultWorkBenchRecipe;
 
 	/** References to the created storage */
-	UPROPERTY( Replicated, SaveGame )
+	UPROPERTY( ReplicatedUsing=OnRep_HAXX_SubbuildingReplicated, SaveGame )
 	class AFGBuildable* mStorage;
 
-	/** References to the created MAM */
-	UPROPERTY( Replicated, SaveGame )
-	class AFGBuildable* mMAM;
-
 	/** References to the created Hub Terminal */
-	UPROPERTY( Replicated, SaveGame )
+	UPROPERTY( ReplicatedUsing=OnRep_HAXX_SubbuildingReplicated, SaveGame )
 	class AFGBuildableHubTerminal* mHubTerminal;
 
 	/** References to the created work bench */
-	UPROPERTY( Replicated, SaveGame )
+	UPROPERTY( ReplicatedUsing=OnRep_HAXX_SubbuildingReplicated, SaveGame )
 	class AFGBuildable* mWorkBench;
 
 	/** Arrays containing ints for what level  we should activate/show the generator */
@@ -139,9 +133,6 @@ public:
 	UPROPERTY( EditDefaultsOnly, Category = "Trading Post" )
 	int32 mStorageVisibilityLevel;
 
-	/** At what trading post level should the MAM be visible */
-	UPROPERTY( EditDefaultsOnly, Category = "Trading Post" )
-	int32 mMAMVisibilityLevel;
 protected:
 	/** Our input inventory where items are stored before put on ship */
 	UPROPERTY( SaveGame, Replicated )
@@ -178,10 +169,6 @@ protected:
 	/** Component used to determine storage location */
 	UPROPERTY( EditAnywhere )
 	USceneComponent* mStorageLocation;
-
-	/** Component used to determine MAM location */
-	UPROPERTY( EditAnywhere )
-	USceneComponent* mMAMLocation;
 
 	/** Component used to determine Hub terminal location */
 	UPROPERTY( EditAnywhere )

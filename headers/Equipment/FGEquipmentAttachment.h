@@ -72,7 +72,6 @@ public:
 
 	/** Get the back animation to play on the player */
 	FORCEINLINE EBackEquipment GetBackAnimation() const{ return mBackAnimation; }
-
 protected:
 	/** @return character this is attached to; nullptr if not attached. */
 	UFUNCTION( BlueprintPure, Category = "Equipment|Attachment" )
@@ -90,6 +89,8 @@ protected:
 	UFUNCTION()
 	void OnRep_OnAnimationStateUpdated();
 
+	/** Sets tick status for actor and all components */
+	void SetAttachmentTicks( bool inTick );
 public:
 
 	/** The class of the equipment that spawned this attachment */

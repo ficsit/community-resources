@@ -34,6 +34,8 @@ class FACTORYGAME_API UFGBuildGunState : public UObject
 	GENERATED_BODY()
 
 public:
+	UFGBuildGunState();
+
 	/** For replicating more complicated objects. */
 	virtual bool ReplicateSubobjects( class UActorChannel* channel, class FOutBunch* bunch, FReplicationFlags* repFlags );
 
@@ -75,7 +77,37 @@ public:
 
 	/** Redirected from the build gun. */
 	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
+	void PrimaryFireRelease();
+
+	/** Redirected from the build gun. */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
 	void SecondaryFire();
+
+	/** Redirected from the build gun. */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
+	void ModeSelectPressed();
+
+		/** Redirected from the build gun. */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
+	void ModeSelectRelease();
+
+
+	/** Redirected from the build gun. */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
+	void BuildSamplePressed();
+
+	/** If true, then the building is valid to sample in this state */
+	virtual bool IsValidBuildingSample( class AFGBuildable* buildable ) const;
+
+	/**
+	 * We have sampled a new recipe
+	 */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState|Build" )
+	void OnRecipeSampled( TSubclassOf<class UFGRecipe> recipe );
+
+	/** Redirected from the build gun. */
+	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
+	void BuildSampleRelease();
 
 	/** Redirected from the build gun. */
 	UFUNCTION( BlueprintNativeEvent, Category = "BuildGunState" )
@@ -137,11 +169,10 @@ public:
 	/** @return true if there is an delay on this state. */
 	UFUNCTION( Category = "BuildGunState" )
 	bool HasBuildGunDelay();
-
+protected:
+	/** If true, then we can sample buildings in this state */
+	bool mCanSampleBuildingsInState;
 private:
-	/** Is this state active? */
-	bool mIsActive;
-
 	/** Time (in seconds) it takes for the action (eg. Build, dismantle) */
 	UPROPERTY( EditDefaultsOnly, Category = "BuildGunState" )
 	float mActionDelay;
@@ -152,6 +183,9 @@ private:
 	/** Text to show while action is in progress */
 	UPROPERTY( EditDefaultsOnly, Category = "BuildGunState" )
 	FText mActionMessage;
+
+	/** Is this state active? */
+	bool mIsActive;
 };
 
 /**
@@ -187,8 +221,6 @@ public:
 	UFUNCTION( BlueprintCallable, Category = "BuildGun|Recipe" )
 	void GetAvailableRecipes( TArray< TSubclassOf< class UFGRecipe > >& out_recipes ) const;
 
-	TSubclassOf< class UFGItemDescriptor > GetDescriptorForRecipe( TSubclassOf< class UFGRecipe > recipe ) const;
-	
 	/** Convenience function to get the cost for a recipe. */
 	UFUNCTION( BlueprintCallable, Category = "BuildGun|Recipe" )
 	TArray< FItemAmount > GetCostForRecipe( TSubclassOf< class UFGRecipe > recipe ) const;
@@ -222,9 +254,11 @@ public:
 	 * Simulations may be sounds and the brrrrrrrring progress bar when selling.
 	 *****************************************************************************/
 	void OnPrimaryFirePressed();
-	void OnSecondaryFirePressed();
 	void OnPrimaryFireReleased();
+	void OnSecondaryFirePressed();
 	void OnSecondaryFireReleased();
+	void OnModeSelectPressed();
+	void OnModeSelectReleased();
 	void OnScrollDownPressed();
 	void OnScrollUpPressed();
 	void OnScrollModePressed();
@@ -233,6 +267,8 @@ public:
 	void OnSnapToGuideLinesReleased();
 	void OnDismantleToggleMultiSelectStatePressed();
 	void OnDismantleToggleMultiSelectStateReleased();
+	void OnBuildSamplePressed();
+	void OnBuildSampleReleased();
 
 	/**
 	 * Only the client handles categories, recipes.
@@ -266,6 +302,8 @@ public:
 	 */
 	UFUNCTION( BlueprintCallable, Category = "BuildGun" )
 	void GotoDismantleState();
+
+	void SetAllowRayCleranceHit( bool allow );
 protected:
 	/** Add custom bindings for this equipment */
 	virtual void AddEquipmentActionBindings() override;
@@ -343,6 +381,8 @@ protected:
 	UPROPERTY( EditDefaultsOnly, Category = "BuildGun|State" )
 	TSubclassOf< class UFGBuildGunStateDismantle > mDismantleStateClass;
 
+	bool mAllowCleranceRayHits = false;
+
 private:
 	/** All the states. */
 	UPROPERTY( Replicated )
@@ -369,6 +409,8 @@ private:
 
 	/** wait for primary fire release event before re-initiating another build gun fire. Does not affect click+hold. */
 	bool mWaitingForPrimaryFireRelease;
+
+	bool mHasHookedUpBuildStateUserSettings = false; //[DavalliusA:Thu/23-01-2020] not happy with this, but didn't find a function that is only called once and where we know we have a local instagator or not 
 };
 
 /**

@@ -17,12 +17,15 @@ class FACTORYGAME_API AFGTradingPostHologram : public AFGFactoryHologram
 	
 	// Begin AFGHologram interface
 	virtual void CheckValidPlacement() override;
-	virtual void SpawnChildren( class UFGBuildGunStateBuild* state ) override;
-	virtual AActor* Construct( TArray< AActor* >& out_children ) override;
+	virtual void SpawnChildren( AActor* hologramOwner, FVector spawnLocation, APawn* hologramInstigator ) override;
+	virtual AActor* Construct( TArray< AActor* >& out_children, FNetConstructionID netConstructionID ) override;
 protected:
 	virtual USceneComponent* SetupComponent( USceneComponent* attachParent, UActorComponent* componentTemplate, const FName& componentName ) override;
 	virtual void SetHologramLocationAndRotation( const FHitResult& hitResult ) override;
-	// End AFGHologram interface
+
+	virtual void OnHologramTransformUpdated() override;
+
+		// End AFGHologram interface
 
 	// Moved GetBuildableClassFromRecipe to a static helper in AFGBuildable
 
@@ -34,10 +37,6 @@ private:
 	/** The storage hologram */
 	UPROPERTY( Replicated )
 	class AFGBuildableHologram* mStorageHologram;
-
-	/** The mam hologram */
-	UPROPERTY( Replicated )
-	class AFGBuildableHologram* mMAMHologram;
 
 	/** The hub terminal holograms */
 	UPROPERTY( Replicated )
@@ -54,10 +53,6 @@ private:
 	/** component matching the location where the storage is placed */
 	UPROPERTY()
 	USceneComponent* mStorageLocation;
-
-	/** component matching the location where the mam is placed */
-	UPROPERTY()
-	USceneComponent* mMAMLocation;
 
 	/** component matching the location where the hub terminal is placed */
 	UPROPERTY()

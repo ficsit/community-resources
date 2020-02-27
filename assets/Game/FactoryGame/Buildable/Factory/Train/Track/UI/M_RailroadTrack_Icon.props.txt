@@ -13,11 +13,11 @@ Parent = Material3'/Game/FactoryGame/Resource/M_InventoryIcon.M_InventoryIcon'
 BasePropertyOverrides =
 {
     bOverride_BlendMode = false
-    BlendMode = BLEND_Opaque (0)
+    BlendMode = BLEND_Translucent (2)
     bOverride_TwoSided = false
     TwoSided = false
     bOverride_OpacityMaskClipValue = false
-    OpacityMaskClipValue = 0
+    OpacityMaskClipValue = 0.3333
 }
 FlattenedTexture = None
 MobileBaseTexture = None

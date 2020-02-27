@@ -46,6 +46,21 @@ struct FFactoryGameCustomVersion
 		// 2019-04-24: Changed so that fuel classes default values are separated from what's replicated to clients
 		ChangedFuelClassesStorage,
 
+		// 2019-10-02: Refactored unlock system and migrated schematic data to new unlock system
+		RefactoredUnlockSystem,
+
+		// 2019-11-13: Refactored schematic category type from enum based to object based
+		RefactoredSchematicCategoryType,
+
+		// 2019-11-18: Renamed members of FGExponentialHeightFog
+		RenamedPostProcessMembersOfHeightFog,
+
+		// 2020-02-06: Meant to be in save custom version but misplaced it and now assets have been saved with it so don't want to remove it. 
+		MisplacedVersion,
+
+		// 2020-02-21: Renamed mShipTravelTimeAfterPurchase to mTimeToComplete
+		RenamedSchematicShipTravelTime,
+
 		// -----<new versions can be added above this line>-------------------------------------------------
 		VersionPlusOne,
 		LatestVersion = VersionPlusOne - 1

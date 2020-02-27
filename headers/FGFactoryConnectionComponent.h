@@ -21,6 +21,7 @@
 
 /**
  * Type of connections in the game.
+ * @todoPipes - This is old, we're shifting to a different connection component type for pipes as they don't need most of the special logic in the factory connection
  */
 UENUM( BlueprintType )
 enum class EFactoryConnectionConnector : uint8
@@ -78,6 +79,16 @@ public:
 	void SetInventory( class UFGInventoryComponent* inventory );
 
 	/**
+	* Sets a specified index for the component to access on its assigned inventory
+	*/
+	void SetInventoryAccessIndex( int32 index );
+
+	/**
+	* Gets the inventory access index specified for this factory connection
+	*/
+	int32 GetInventoryAccessIndex() const { return mInventoryAccessIndex; }
+
+	/**
 	 * Set which connection this is connected to.
 	 * @note Sets both ends of the connection.
 	 * If there already a connection made we assert.
@@ -100,7 +111,7 @@ public:
 	 * Is this connection connected to anything.
 	 * @return - true if connected; otherwise false. Always false if attached to hologram, snap only or bad index configuration.
 	 */
-	UFUNCTION( BlueprintCallable, Category="Connection")
+	UFUNCTION( BlueprintCallable, Category = "Connection" )
 	bool IsConnected() const;
 
 	/** Return the inventory associated with this connection. */
@@ -167,6 +178,8 @@ public:
 	/** Debug */
 	void DisplayDebug( int32 connectionIndex, class UCanvas* canvas, const class FDebugDisplayInfo& debugDisplay, float& YL, float& YPos );
 
+	class AFGBuildable* GetOuterBuildable() const { return mOuterBuildable; }
+
 	/**
 	 * Sort the components by name
 	 * 
@@ -176,8 +189,6 @@ public:
 
 	/**
 	 * This function tells us the maximum amounts of grabs this building can make this frame
-	 *
-	 * @ param out_availableSpace - the amount of space until next item.
 	 */
 	virtual uint8 MaxNumGrab( float delta ) const;
 
@@ -185,7 +196,7 @@ public:
 	static UFGFactoryConnectionComponent* FindCompatibleOverlappingConnections(
 		class UFGFactoryConnectionComponent* component,
 		const FVector& location,
-		float radius );
+		float radius, UFGFactoryConnectionComponent* lowPrioConnection = nullptr );
 
 	/** Find the closest overlapping connection matching all search criteria. */
 	static UFGFactoryConnectionComponent* FindOverlappingConnections(
@@ -193,7 +204,19 @@ public:
 		const FVector& location,
 		float radius,
 		EFactoryConnectionConnector connector,
+		EFactoryConnectionDirection direction, UFGFactoryConnectionComponent* lowPrioConnection = nullptr );
+
+	/** Fin all overlapping connections and returns them in a list. Filters to not include blocks connections or other incompatible connections*/
+	static int32 FindAllOverlappingConnections(
+		TArray<UFGFactoryConnectionComponent*> out_Connection,
+		UWorld* world,
+		const FVector& location,
+		float radius,
+		EFactoryConnectionConnector connector,
 		EFactoryConnectionDirection direction );
+
+	//checks if a connection is blocked by another connection in a list of building overlaps. If not blocked it returns null, if blocked it returns the blocking connection. Intended for internal use in finding connections but left exposed for potential general usefulness
+	static UFGFactoryConnectionComponent* CheckIfSnapOnlyIsBlockedbyOtherConnection( UFGFactoryConnectionComponent* connectionToCheck, TArray<FOverlapResult> potentialBlockers );
 
 protected:
 	/** Physical type of connector used for this connection. */
@@ -212,12 +235,17 @@ protected:
 	UPROPERTY( SaveGame )
 	class UFGFactoryConnectionComponent* mConnectedComponent;
 
+	/** Light-weight connected indication for clients. */
 	UPROPERTY( Replicated )
-	bool mHasConnectedComponent = false;
+	bool mHasConnectedComponent;
 
 	/** The inventory of this connection */
 	UPROPERTY( SaveGame )
 	class UFGInventoryComponent* mConnectionInventory;
+
+	/** The inventory index utilized by this connection ( -1 for none specified ) */
+	UPROPERTY( SaveGame )
+	int32 mInventoryAccessIndex;
 
 	/** Buildable owning us, cached for performance (no need to UPROPERTY this) */
 	class AFGBuildable* mOuterBuildable;

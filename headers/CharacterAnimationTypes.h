@@ -17,7 +17,9 @@ enum class EArmEquipment : uint8
 	AE_PortableMiner,
 	AE_StunSpear,
 	AE_ShockShank,
-	AE_ResourceCollector	
+	AE_ResourceCollector,
+	AE_Generic1Hand,
+	AE_Generic2Hand
 };
 
 

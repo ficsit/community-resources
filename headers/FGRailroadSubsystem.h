@@ -31,6 +31,7 @@ public:
 	/** Do this track graph need to be rebuilt, e.g. tracks have been removed. */
 	uint8 NeedFullRebuild:1;
 
+	//@todotrains Signaling, consider if this and mHasTrackGraphsChanged is needed.
 	/** Has this track graph changed, tracks connected, rolling stock added or removed. */
 	uint8 HasChanged:1;
 };
@@ -329,8 +330,8 @@ private:
 
 
 	/** The physics is driven by the physics scene. */
-	void PreTickPhysics( FPhysScene* physScene, uint32 sceneType, float dt );
-	void UpdatePhysics( FPhysScene* physScene, uint32 sceneType, float dt );
+	void PreTickPhysics( FPhysScene* physScene, float dt );
+	void UpdatePhysics( FPhysScene* physScene, float dt );
 
 	void UpdateSimulationData( class AFGTrain* train, struct FTrainSimulationData& simData );
 
@@ -344,7 +345,7 @@ private:
 	int32 CreateTrackGraph();
 
 	/** Remove track graph. */
-	void RemoveTrackGraph( int graphID );
+	void RemoveTrackGraph( int32 graphID );
 
 	/** Adds a track to a graph, performs a merge if the track is connected to another graph. */
 	void AddTrackToGraph( class AFGBuildableRailroadTrack* track, int32 graphID );
@@ -384,7 +385,7 @@ private:
 	UPROPERTY()
 	TMap< int32, FTrackGraph > mTrackGraphs;
 
-	/** If the subsystem needs to do a complete update. */
+	/** If the track graphs has changed and dependent data needs an update. */
 	bool mHasTrackGraphsChanged;
 
 	/** All station identifiers in the world. */

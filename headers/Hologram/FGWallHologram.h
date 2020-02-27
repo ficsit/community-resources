@@ -15,11 +15,13 @@ class FACTORYGAME_API AFGWallHologram : public AFGFactoryBuildingHologram
 public:
 	AFGWallHologram();
 
-	/** Begin */
 	virtual void BeginPlay() override;
 
 	// Begin AFGHologram interface
 	virtual bool TrySnapToActor( const FHitResult& hitResult ) override;
+	virtual AActor* GetUpgradedActor() const override;
+	virtual bool TryUpgrade( const FHitResult& hitResult ) override;
+	virtual bool DoMultiStepPlacement( bool isInputFromARelease ) override;
 	// End AFGHologram interface
 
 protected:
@@ -33,4 +35,10 @@ private:
 
 	/** Height of the wall, from the default buildable. */
 	float mHeight;
+
+	/** Ratios for the snapping zones, how much of the wall to hit for snap to either direction. */
+	float mSnapSidesHitZoneRatio = 0.2f;
+	float mSnapBottomHitZoneRatio = 0.2f;
+
+	class AFGBuildableWall* mUpgradeTarget = nullptr;
 };
