@@ -22,23 +22,33 @@ set /p VERSION_LINE= < .temp-version
 set VERSION=%VERSION_LINE:*CL-=%
 del .temp-version
 
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 :: assets
 rmdir /Q /S %ASSETS_DIR%
 %UMODEL% -game="ue4.22" -path=%GAME_DIR% -out=%ASSETS_DIR% -png -export */UI/*
+
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 :: data
 rmdir /Q /S %DATA_DIR%
 mkdir %DATA_DIR%
 for /R %GAME_DIR%\CommunityResources\Docs %%f in (*.json) do (
-    %JQ% . "%%f" > %DATA_DIR%\%%~nxf
+    type "%%f" | %JQ% . > %DATA_DIR%\%%~nxf
 )
+
+if %errorlevel% neq 0 exit /b %errorlevel%
 
 :: headers
 rmdir /Q /S %HEADERS_DIR%
 mkdir %HEADERS_DIR%
 tar -x -f %GAME_DIR%\CommunityResources\Headers.zip -C %HEADERS_DIR%
 
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 :: finish up
 git add .
 git commit -m "CL %VERSION%"
 git tag %VERSION%
+git push
+git push --tags
