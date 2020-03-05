@@ -39,8 +39,17 @@ public:
 	float Content = 0.f;
 	/** The max content this fluid box can hold. [m^3] */
 	float MaxContent = 5.f;
-	/** The maximum overfill allowed in the range [0,1] normalized percent. */
+	/** The maximum overfill allowed in the range (0,1] normalized percent. */
 	float MaxOverfillPct = 0.1f;
+	/**
+	 * Overfilling is what creates pressure in the pipes,
+	 * How much of the overfill that contributes to the pressure is defined here.
+	 * If the max over fill is 10 % and 50 % of that is contributing to pressure:
+	 * Then we'll reach maximum pressure at 105 % content and are allowed to fill to 110 %.
+	 *
+	 * This value is in the range (0,1] normalized percent.
+	 */
+	static constexpr float OVERFILL_USED_FOR_PRESSURE_PCT = 0.5f;
 
 	/**
 	 * The following flow values are not used for any simulations only for feedback.
